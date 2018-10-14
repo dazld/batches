@@ -1,3 +1,5 @@
+
+[![CircleCI](https://circleci.com/gh/dazld/batches/tree/master.svg?style=svg)](https://circleci.com/gh/dazld/batches/tree/master)
 # batches
 
 A Clojure library designed to accumulate values and periodically invoke (probably for side effects) a function with those values
