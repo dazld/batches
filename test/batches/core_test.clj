@@ -4,7 +4,7 @@
 
 
 (deftest multithreaded
-  (let [threads 10000
+  (let [futures 500
         result (atom [])
         foo (bc/accumulate (fn [v]
                              (swap! result
@@ -14,10 +14,16 @@
         worker (fn []
                  (future
                    (bc/add foo 1)))]
-    (dotimes [_ threads]
+    (dotimes [_ futures]
       (worker))
     (Thread/sleep 100)
-    (bc/stop foo)
-    (is (= (first @result) threads))))
+    (is (= (first @result) futures))
+    (dotimes [_ futures]
+      (worker))
+    (Thread/sleep 100)
+    (is (= (first @result) futures))
+    (bc/stop foo)))
 
 
+(deftest booms
+  (let []))
