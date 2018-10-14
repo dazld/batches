@@ -9,10 +9,16 @@
 (defn accumulate
   "Periodically invoke action with values, which can be pushed into the queue with (add this value).
   Allows the invocation to be cancelled by calling (stop (accumulate identity))"
-  [action time-ms]
+  [action time-ms on-error]
   (let [stop (a/chan 1)
-        push (a/chan)
+        push (a/chan 128)
         timer (a/chan)
+        try-action (fn [v]
+                     (try
+                      (action v)
+                      (catch Throwable e
+                        (on-error e)
+                        (a/put! stop e))))
         _ (a/go-loop []
             (a/<! (a/timeout time-ms))
             (a/>! timer :go)
@@ -22,11 +28,11 @@
                       (condp = ch
                         push (recur (conj vals v))
                         timer (do
-                                (action vals)
+                                (a/thread (try-action vals))
                                 (recur []))
                         stop (do
                                (action vals)
-                               vals))))]
+                               v))))]
     (reify
       Accumulating
       (add [_ v] (a/put! push v))

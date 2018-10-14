@@ -12,7 +12,8 @@
                         (fn [results]
                           (conj results (reduce + 0 v)))))
         foo (bc/accumulate action
-                           wait)
+                           wait
+                           println)
         worker (fn []
                  (future
                    (bc/add foo 1)))]
@@ -20,13 +21,5 @@
       (worker))
     (Thread/sleep wait)
     (is (= (first @result) futures))
-    (dotimes [_ futures]
-      (worker))
-    (Thread/sleep wait)
-    (is (= (first @result) futures))
-    (bc/add foo 1)
-    (is (= (bc/stop foo) [1]))))
+    (bc/stop foo)))
 
-
-(deftest booms
-  (let []))
