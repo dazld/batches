@@ -13,11 +13,11 @@ don't use this yet. really. mostly written for a learning experience...
 => (def action (fn [value] (println (count values)))
 => (def foo (batches/accumulate action 3000)))
 => (doseq [v (range 10)]
-     (add foo v))
+     (batches/add foo v))
 ; (around 3s after starting, should see 10 or so, then 0 every 3s while not adding new ints)
 
 ; schedule stopping the accumulator
-=> (stop foo)
+=> (batches/stop foo)
 
 ```
 
