@@ -1,14 +1,13 @@
 (ns batches.core
-  (:require [clojure.core.async :as a]
-            [clojure.tools.logging :as log]))
+  (:require [clojure.core.async :as a]))
 
 (defprotocol Accumulating
   (add [this v])
   (stop [this]))
 
 (defn accumulate
-  "Periodically invoke action with values, which can be pushed into the queue with (add this value).
-  Allows the invocation to be cancelled by calling (stop (accumulate identity))"
+  "Periodically invoke action with values, which can be pushed into the queue with (add returned-from-accumulate value).
+  Allows the invocation to be cancelled by calling (stop returned-from-accumulate)"
   [action time-ms on-error]
   (let [stop (a/chan 1)
         push (a/chan 128)
@@ -17,8 +16,8 @@
                      (try
                       (action v)
                       (catch Throwable e
-                        (on-error e)
-                        (a/put! stop e))))
+                        (a/put! stop :stop)
+                        (on-error e))))
         _ (a/go-loop []
             (a/<! (a/timeout time-ms))
             (a/>! timer :go)
@@ -30,9 +29,7 @@
                         timer (do
                                 (a/thread (try-action vals))
                                 (recur []))
-                        stop (do
-                               (action vals)
-                               v))))]
+                        stop (try-action vals))))]
     (reify
       Accumulating
       (add [_ v] (a/put! push v))
