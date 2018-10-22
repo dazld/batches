@@ -3,6 +3,7 @@
 
 (defprotocol Accumulating
   (add [this v])
+  (results [this])
   (stop [this]))
 
 (defn accumulate
@@ -12,16 +13,14 @@
   (let [stop (a/chan 1)
         push (a/chan 128)
         timer (a/chan)
+        results (a/chan 128)
+        errors (a/chan 128)
         try-action (fn [v]
                      (try
-                      (action v)
+                      (a/put! results (action v))
                       (catch Throwable e
                         (a/put! stop :stop)
-                        (on-error e))))
-        _ (a/go-loop []
-            (a/<! (a/timeout time-ms))
-            (a/>! timer :go)
-            (recur))
+                        (a/put! errors e))))
         main-loop (a/go-loop [vals []]
                     (let [[v ch] (a/alts! [push timer stop] :priority true)]
                       (condp = ch
@@ -29,10 +28,18 @@
                         timer (do
                                 (a/thread (try-action vals))
                                 (recur []))
-                        stop (try-action vals))))]
+                        stop (action vals))))]
+    (a/go-loop []
+      (a/<! (a/timeout time-ms))
+      (a/>! timer :go)
+      (recur))
+    (a/go-loop []
+      (on-error (a/<! errors))
+      (recur))
     (reify
       Accumulating
       (add [_ v] (a/put! push v))
+      (results [_] results)
       (stop [_]
         (a/put! stop :stop)
         (a/<!! main-loop)))))
