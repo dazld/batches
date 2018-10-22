@@ -22,13 +22,14 @@
       (is (= (a/<!! (bc/results foo))) futures)
       (assert/not-called? error-handler)
       (assert/called-once? action)
-      (bc/stop foo)))
+      (is (= 0 (bc/stop foo)))))
 
   (testing "booms are reported"
     (let [error-handler (spy/spy)
+          e (ex-info "nope" {:message "boom"})
           action (spy/spy (fn [v]
                             (if (>= (count v) 10)
-                              (throw (ex-info "nope" {:message "boom"}))
+                              (throw e)
                               :ok)))
           other (bc/accumulate action
                                10
@@ -39,9 +40,11 @@
       (Thread/sleep 20)
       (assert/not-called? error-handler)
       (dotimes [n 10]
-        (bc/add other :wait-for-it))
+        (bc/add other n))
       (Thread/sleep 20)
       (assert/called-once? error-handler)
+      (assert/called-with? action (range 10))
+      (assert/called-with? error-handler e)
       (bc/add other :pump)
       (is (= :ok (bc/stop other))))))
 
