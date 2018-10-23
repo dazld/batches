@@ -1,8 +1,14 @@
 
 [![CircleCI](https://circleci.com/gh/dazld/batches/tree/master.svg?style=svg)](https://circleci.com/gh/dazld/batches/tree/master)
+[![Clojars Project](https://img.shields.io/clojars/v/org.clojars.dazld/batches.svg)](https://clojars.org/org.clojars.dazld/batches)
+
 # batches
 
 A Clojure library designed to accumulate values from an input channel and periodically provide them to an output channel.
+
+#### Clojars coords
+
+`[org.clojars.dazld/batches "0.1.0"]`
 
 ## Usage
 ```clojure
