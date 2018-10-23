@@ -20,7 +20,7 @@
                          (bc/add foo 1)))]
       (dotimes [_ futures]
         (push-value))
-      (Thread/sleep 19)
+      (Thread/sleep 500)
       (assert/called-with? result-handler futures)
       (assert/not-called? error-handler)
       (assert/called-at-least-once? action)
