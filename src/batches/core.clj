@@ -11,7 +11,6 @@
   [action time-ms on-error on-result]
   (let [stop (a/chan)
         push (a/chan 128)
-        timer (a/chan)
         try-action (fn [v]
                      (try
                        (when (count v)
@@ -19,20 +18,17 @@
                        (catch Throwable e
                          (a/put! stop :stop)
                          (on-error e))))
-        main-loop (a/go-loop [vals []]
+        main-loop (a/go-loop [vals []
+                              timer (a/timeout time-ms)]
                     (let [[v ch] (a/alts! [push timer stop] :priority true)]
                       (condp = ch
-                        push (recur (conj vals v))
+                        push (recur (conj vals v) timer)
                         timer (do
                                 (a/thread (try-action vals))
-                                (recur []))
+                                (recur [] (a/timeout time-ms)))
                         stop (do
                                (a/close! push)
                                (action vals)))))]
-    (a/go-loop []
-      (a/<! (a/timeout time-ms))
-      (a/>! timer :go)
-      (recur))
     (reify
       Accumulating
       (add [_ v]
