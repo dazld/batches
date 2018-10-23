@@ -2,22 +2,22 @@
 [![CircleCI](https://circleci.com/gh/dazld/batches/tree/master.svg?style=svg)](https://circleci.com/gh/dazld/batches/tree/master)
 # batches
 
-A Clojure library designed to accumulate values and periodically invoke (probably for side effects) a function with those values
-
-## VERY ALPHA
-
-don't use this yet. really. mostly written for a learning experience... 
+A Clojure library designed to accumulate values from an input channel and periodically provide them to an output channel.
 
 ## Usage
 ```clojure
-=> (def action (fn [value] (println (count values)))
-=> (def foo (batches/accumulate action 3000)))
+=> (require '[clojure.core.async :as ac])
+=> (require '[batches.core :refer [accumulate]])
+=> (def in (ac/chan))
+=> (def out (ac/chan))
+=> (def foo (accumulate 3000 in out)))
 => (doseq [v (range 10)]
-     (batches/add foo v))
-; (around 3s after starting, should see 10 or so, then 0 every 3s while not adding new ints)
-
-; schedule stopping the accumulator
-=> (batches/stop foo)
+     (ac/put! in 1))
+=> (reduce + 0 (ac/<!! out)))
+10
+; stop the accumulator
+=> (and (ac/>!! in :stop) (ac/<!! out))
+[]
 
 ```
 

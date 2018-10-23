@@ -1,26 +1,37 @@
 (ns batches.core-test
   (:require [clojure.test :refer :all]
+            [clojure.core.async :as a]
+            [spy.core :as spy]
+            [spy.assert :as assert]
             [batches.core :as bc]))
 
+(deftest batches
+  (testing "pushing many values"
+    (let [in (a/chan 2000)
+          out (a/chan)
+          foo (bc/accumulate 600 in out)
+          then (System/currentTimeMillis)]
 
-(deftest multithreaded
-  (testing "pushing from many threads"
-    (let [futures 1000
-          wait 200
-          result (atom [])
-          action (fn [v]
-                   (swap! result
-                          (fn [results]
-                            (conj results (reduce + 0 v)))))
-          foo (bc/accumulate action
-                             wait
-                             println)
-          worker (fn []
-                   (future
-                     (bc/add foo 1)))]
-      (dotimes [_ futures]
-        (worker))
-      (Thread/sleep wait)
-      (is (= (first @result) futures))
-      (bc/stop foo))))
+      (doseq [n (range 10000)]
+        (a/>!! in 1))
+
+      (let [result (reduce + 0 (a/<!! out))
+            elapsed (- (System/currentTimeMillis) then)]
+        (println "Expected around 600ms, took:" (str elapsed "ms"))
+        (is (> elapsed 500))
+        (is (= result 10000))
+        (is (= [] (a/<!! out))))))
+
+  (testing "pushing `:stop` will stop recursion and drain any pending values directly into out"
+    (let [in (a/chan)
+          out (a/chan)
+          foo (bc/accumulate 5000 in out)
+          then (System/currentTimeMillis)]
+
+      (a/>!! in :foo)
+      (a/>!! in :stop)
+      (let [result (a/<!! out)
+            elapsed (- (System/currentTimeMillis) then)]
+        (is (= result [:foo]))
+        (is (<= elapsed 1))))))
 
