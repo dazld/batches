@@ -10,10 +10,10 @@
   Allows the invocation to be cancelled by calling (stop returned-from-accumulate)"
   [action time-ms on-error on-result]
   (let [stop (a/chan)
-        push (a/chan 128)
+        push (a/chan)
         try-action (fn [v]
                      (try
-                       (when (count v)
+                       (when (seq v)
                          (on-result (action v)))
                        (catch Throwable e
                          (a/put! stop :stop)
