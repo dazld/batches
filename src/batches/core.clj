@@ -1,5 +1,6 @@
 (ns batches.core
-  (:require [clojure.core.async :as a]))
+  (:require [clojure.core.async :as a]
+            [clojure.tools.logging :as log]))
 
 (defn accumulate
   "Every `time-ms`, take the values accumulated inside a go-loop from `in` and push them to `v` as a collection.
